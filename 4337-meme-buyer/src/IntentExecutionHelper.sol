@@ -21,15 +21,7 @@ contract IntentExecutionHelper is IntentInterface, CCIPReceiver, Ownable {
 
     mapping(uint64 => address) public allowedGateways;
 
-    event SourceAllowed(uint64 indexed selector, address indexed gateway);
-    event SourceRemoved(uint64 indexed selector);
-    event ChainIdReported(
-        bytes32 indexed responseMessageId,
-        bytes32 indexed requestMessageId,
-        uint256 helperChainId
-    );
 
-    error SourceNotAllowed();
     constructor(address _router, address _link)
         CCIPReceiver(_router)
         Ownable(msg.sender)
