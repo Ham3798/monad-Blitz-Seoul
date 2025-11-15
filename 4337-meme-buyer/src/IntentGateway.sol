@@ -53,9 +53,6 @@ contract IntentGateway is IntentInterface, CCIPReceiver, Ownable {
         uniswapRouter = _uniswapRouter;
     }
 
-    function setWETH(address _weth) external onlyOwner {
-        weth = _weth;
-    }
 
     function submitIntent(BuyIntent calldata intent) external payable returns (bytes32 intentId) {
         if (helper == address(0)) revert HelperNotSet();
@@ -77,15 +74,20 @@ contract IntentGateway is IntentInterface, CCIPReceiver, Ownable {
         if(moand_launchpad_list[intent.memeToken] == MONAD_CHAIN_SELECTOR || intent.chainselector == MONAD_CHAIN_SELECTOR) {
             // Direct swap on Monad using Uniswap router
             require(uniswapRouter != address(0), "Uniswap router not set");
-            require(weth != address(0), "WETH not set");
             require(msg.value >= intent.maxEthIn, "Insufficient ETH sent");
+            
+            // Get WETH address from router (required: path[0] must equal Router's WETH)
+            // Router checks: require(path[0] == WETH, 'UniswapV2Router: INVALID_PATH')
+            address routerWETH = IUniswapV2Router02(uniswapRouter).WETH();
+            require(routerWETH != address(0), "Router WETH not set");
             
             // Calculate minimum amount out with slippage protection
             uint256 minAmountOut = intent.amountOut * (10000 - intent.maxSlippageBps) / 10000;
             
             // Build swap path: ETH -> WETH -> MEMEToken
+            // path[0] MUST be Router's WETH address, otherwise INVALID_PATH error
             address[] memory path = new address[](2);
-            path[0] = weth;
+            path[0] = routerWETH;
             path[1] = intent.memeToken;
             
             // Execute swap via Uniswap router
