@@ -18,6 +18,7 @@ import { createSmartAccountClient } from "permissionless"
 
 const apiKey = process.env.PIMLICO_API_KEY
 if (!apiKey) throw new Error("Missing PIMLICO_API_KEY")
+	//pimico api키 확인 
  
 const privateKey =
 	(process.env.PRIVATE_KEY as Hex) ??
@@ -26,6 +27,8 @@ const privateKey =
 		writeFileSync(".env", `PRIVATE_KEY=${pk}`)
 		return pk
 	})()
+//여기서 프라이빗 키를 쓰지말고 지갑, 소셜로그인을 통해 키를 가져와서 사용하자
+
  
 const monadTestnet = defineChain({
 	id: 10143,
@@ -61,6 +64,7 @@ export const publicClient = createPublicClient({
 	chain: monadTestnet,
 	transport: http(monadTestnet.rpcUrls.default.http[0]),
 })
+//public client 생성 
  
 const pimlicoUrl = `https://api.pimlico.io/v2/monad-testnet/rpc?apikey=${apiKey}`
  
@@ -71,6 +75,8 @@ const pimlicoClient = createPimlicoClient({
 		version: "0.7",
 	},
 })
+//pimlico client 생성 (Pimlico Bundler와 통신, userOp Bundling)
+
 
 const account = await toSafeSmartAccount({
 	client: publicClient,
@@ -81,6 +87,7 @@ const account = await toSafeSmartAccount({
 	}, // global entrypoint
 	version: "1.4.1",
 })
+//safe smart account 생성 (ERC-4337 표준)
  
 console.log(`Smart account address: https://testnet.monadexplorer.com/address/${account.address}`)
 
@@ -109,12 +116,14 @@ const buyIntent = {
 	deadline,
 	nonce,
 } as const
+//지금은 const로 돼 있음. 이거 유동적으로 입력받아서 처리하도록 바꿔야함
 
 const submitIntentCalldata = encodeFunctionData({
 	abi: intentGatewayAbi,
 	functionName: "submitIntent",
 	args: [buyIntent],
 })
+//intent를 컨트랙트의 함수 호출형태로 인코딩 
 
 console.log(`submitIntent calldata: ${submitIntentCalldata}`)
 
@@ -129,6 +138,7 @@ const smartAccountClient = createSmartAccountClient({
 		},
 	},
 })
+//스마트 지갑으로 트랜잭션 보내는 클라이언트 - 가스비는 Pimlico가 대납 
 
 try {
 	const txHash = await smartAccountClient.sendTransaction({
@@ -149,3 +159,8 @@ try {
 		console.error("[UserOp Error] Unknown error", error)
 	}
 }
+//프로세스:
+// Intent Gateway에 트랜잭션 전송
+// Pimlico가 UserOperation으로 변환
+// Paymaster가 가스비 대납
+// 트랜잭션 해시 반환
