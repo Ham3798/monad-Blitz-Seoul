@@ -12,8 +12,11 @@ import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
  * @notice Receives BuyIntent payloads from IntentGateway, checks price feeds, and responds with fill status.
  */
 contract IntentExecutionHelper is CCIPReceiver, Ownable {
+
+    mapping(address => uint64) public moand_launchpad_list;
     struct BuyIntent {
-        address memeToken;
+        uint64 chainselector;
+        address memeToken;   // => 런치패드가 내부인지 / 외부인지 
         uint256 amountOut;
         uint256 maxEthIn;
         uint256 maxSlippageBps;
@@ -55,36 +58,43 @@ contract IntentExecutionHelper is CCIPReceiver, Ownable {
     }
 
     function _ccipReceive(Client.Any2EVMMessage memory message) internal override {
-        address expected = allowedGateways[message.sourceChainSelector];
-        if (expected == address(0)) revert SourceNotAllowed();
-
-        address senderAddr = abi.decode(message.sender, (address));
-        if (senderAddr != expected) revert SourceNotAllowed();
-
+        // Decode the message data to get intentId and BuyIntent
         (bytes32 intentId, BuyIntent memory intent) = abi.decode(message.data, (bytes32, BuyIntent));
-
-        // For now, simply report the helper chain's chainId back to the gateway.
-        // Future versions can derive pricing/volatility data here.
-        uint256 helperChainId = block.chainid;
-
-        // Basic validation to ensure the intent hasn't expired.
-        bool validIntent = block.timestamp <= intent.deadline;
-
-        Client.EVM2AnyMessage memory response = Client.EVM2AnyMessage({
-            receiver: message.sender,
-            data: abi.encode(intentId, validIntent ? helperChainId : uint256(0)),
-            tokenAmounts: new Client.EVMTokenAmount[](0),
-            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: 200_000})),
-            feeToken: address(link)
-        });
-
-        uint256 fee = router.getFee(message.sourceChainSelector, response);
-        if (link.allowance(address(this), address(router)) < fee) {
-            link.approve(address(router), type(uint256).max);
+        
+        //TODO  사전에 Moand launchpad 주소인지 checklist 구성해두고 BuyIntent.memeToken 주소가 moand의 launchpad 주소이면 해당 컨트랙트에 바로 호출 / 
+        if(moand_launchpad_list[intent.memeToken] == message.sourceChainSelector){
+            //TODO monad launchpad contract 주소 리스트 추가
         }
-
-        bytes32 responseId = router.ccipSend(message.sourceChainSelector, response);
-        emit ChainIdReported(responseId, message.messageId, helperChainId);
+        else{
+            address expected = allowedGateways[message.sourceChainSelector];
+            if (expected == address(0)) revert SourceNotAllowed();
+    
+            address senderAddr = abi.decode(message.sender, (address));
+            if (senderAddr != expected) revert SourceNotAllowed();
+            
+            // For now, simply report the helper chain's chainId back to the gateway.
+            // Future versions can derive pricing/volatility data here.
+            uint256 helperChainId = block.chainid;
+    
+            // Basic validation to ensure the intent hasn't expired.
+            bool validIntent = block.timestamp <= intent.deadline;
+    
+            Client.EVM2AnyMessage memory response = Client.EVM2AnyMessage({
+                receiver: message.sender,
+                data: abi.encode(intentId, validIntent ? helperChainId : uint256(0)),
+                tokenAmounts: new Client.EVMTokenAmount[](0),
+                extraArgs: Client._argsToBytes(Client.EVMExtraArgsV1({gasLimit: 200_000})),
+                feeToken: address(link)
+            });
+    
+            uint256 fee = router.getFee(message.sourceChainSelector, response);
+            if (link.allowance(address(this), address(router)) < fee) {
+                link.approve(address(router), type(uint256).max);
+            }
+            //swap gogo
+            bytes32 responseId = router.ccipSend(message.sourceChainSelector, response);
+            emit ChainIdReported(responseId, message.messageId, helperChainId);
+        }
     }
 }
 
