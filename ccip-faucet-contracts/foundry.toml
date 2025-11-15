@@ -13,7 +13,8 @@ remappings = [
 
 # Add file permissions for JSON config reading
 fs_permissions = [
-    { access = "read", path = "../ccip-faucet-fe/public/configs" }
+    { access = "read", path = "../ccip-faucet-fe/public/configs" },
+    { access = "read", path = "./configs" }
 ]
 
 

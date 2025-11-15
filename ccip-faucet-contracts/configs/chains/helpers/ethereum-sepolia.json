@@ -1,0 +1,11 @@
+{
+  "common": {
+    "ccipRouter": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "linkToken": "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+    "chainSelector": 16015286601757825753
+  },
+  "contracts": {
+    "intentHelper": "0xBBFE759fd5425B1708E5426334F30Fbec74AA9df"
+  }
+}
+
