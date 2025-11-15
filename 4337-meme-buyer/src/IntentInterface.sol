@@ -31,4 +31,13 @@ interface IntentInterface {
     error IntentAlreadySeen();
     error InvalidHelperResponse();
     error HelperSelectorMismatch();
+    event SourceAllowed(uint64 indexed selector, address indexed gateway);
+    event SourceRemoved(uint64 indexed selector);
+    event ChainIdReported(
+        bytes32 indexed responseMessageId,
+        bytes32 indexed requestMessageId,
+        uint256 helperChainId
+    );
+
+    error SourceNotAllowed();
 }

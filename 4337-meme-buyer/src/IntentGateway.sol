@@ -6,29 +6,13 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
-
+import {IntentInterface} from "./IntentInterface.sol";
 /**
  * @title IntentGateway
  * @notice Minimal CCIP-enabled intent dispatcher that sends BuyIntent payloads to a helper chain.
  *         Helper replies determine whether an intent is fillable or rejected.
  */
-contract IntentGateway is CCIPReceiver, Ownable {
-    enum IntentStatus {
-        None,
-        PendingQuote,
-        Fillable,
-        Rejected
-    }
-
-    struct BuyIntent {
-        address memeToken;
-        uint256 amountOut;
-        uint256 maxEthIn;
-        uint256 maxSlippageBps;
-        uint64 helperSelector;
-        uint256 deadline;
-        bytes32 nonce;
-    }
+contract IntentGateway is IntentInterface, CCIPReceiver, Ownable {
 
     IERC20 public immutable link;
     IRouterClient public immutable router;
@@ -39,17 +23,6 @@ contract IntentGateway is CCIPReceiver, Ownable {
     mapping(bytes32 => IntentStatus) public intentStatus;
     mapping(bytes32 => address) public intentOwner;
     mapping(bytes32 => bytes32) public requestIdByIntent;
-
-    event HelperUpdated(address indexed helper);
-    event IntentSubmitted(bytes32 indexed intentId, address indexed user);
-    event IntentQuoteRequested(bytes32 indexed intentId, bytes32 indexed requestId);
-    event IntentChainResolved(bytes32 indexed intentId, uint256 helperChainId);
-
-    error HelperNotSet();
-    error IntentExpired();
-    error IntentAlreadySeen();
-    error InvalidHelperResponse();
-    error HelperSelectorMismatch();
 
     constructor(address _router, uint64 _helperSelector, address _link)
         CCIPReceiver(_router)

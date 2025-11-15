@@ -6,24 +6,15 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CCIPReceiver} from "@chainlink/contracts-ccip/contracts/applications/CCIPReceiver.sol";
 import {IRouterClient} from "@chainlink/contracts-ccip/contracts/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/contracts/libraries/Client.sol";
-
+import {IntentInterface} from "./IntentInterface.sol";
 /**
  * @title IntentExecutionHelper
  * @notice Receives BuyIntent payloads from IntentGateway, checks price feeds, and responds with fill status.
  */
-contract IntentExecutionHelper is CCIPReceiver, Ownable {
+contract IntentExecutionHelper is IntentInterface, CCIPReceiver, Ownable {
 
     mapping(address => uint64) public moand_launchpad_list;
-    struct BuyIntent {
-        uint64 chainselector;
-        address memeToken;   // => 런치패드가 내부인지 / 외부인지 
-        uint256 amountOut;
-        uint256 maxEthIn;
-        uint256 maxSlippageBps;
-        uint64 helperSelector;
-        uint256 deadline;
-        bytes32 nonce;
-    }
+
 
     IERC20 public immutable link;
     IRouterClient public immutable router;
